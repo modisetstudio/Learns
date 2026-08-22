@@ -38,7 +38,9 @@ declare module "@auth/core/jwt" {
 // next-auth/providers/credentials (typová kolize "dvou stejných, ale different
 // instance" typů). Odvozením z NextAuth() samotné se tomuhle problému
 // vyhneme úplně.
-type NextAuthProviders = NonNullable<Parameters<typeof NextAuth>[0]["providers"]>;
+type NextAuthConfigParam = Parameters<typeof NextAuth>[0];
+type NextAuthConfigObject = Exclude<NextAuthConfigParam, (...args: never[]) => unknown>;
+type NextAuthProviders = NonNullable<NextAuthConfigObject["providers"]>;
 
 const providers: NextAuthProviders = [
   Credentials({
