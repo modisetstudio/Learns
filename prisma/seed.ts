@@ -365,8 +365,11 @@ async function main(): Promise<void> {
   });
 
   for (const task of sampleTasks) {
+    if (!task.externalCode) {
+      throw new Error("Seed úlohy musí mít externalCode pro idempotentní upsert.");
+    }
     await prisma.task.upsert({
-      where: { externalCode: task.externalCode ?? undefined },
+      where: { externalCode: task.externalCode },
       update: task,
       create: task,
     });
