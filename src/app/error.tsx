@@ -13,7 +13,6 @@ export default function Error({
   reset: () => void;
 }): React.JSX.Element {
   React.useEffect(() => {
-    // eslint-disable-next-line no-console
     console.error("Chyba stránky:", error);
   }, [error]);
 

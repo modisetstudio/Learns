@@ -68,10 +68,8 @@ function SafeMath({ value, display }: { value: string; display: boolean }): Reac
   }
 
   return display ? (
-    // eslint-disable-next-line react/no-danger
     <div dangerouslySetInnerHTML={{ __html: html }} />
   ) : (
-    // eslint-disable-next-line react/no-danger
     <span dangerouslySetInnerHTML={{ __html: html }} />
   );
 }

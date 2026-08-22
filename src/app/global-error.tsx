@@ -13,7 +13,6 @@ export default function GlobalError({
   reset: () => void;
 }): React.JSX.Element {
   React.useEffect(() => {
-    // eslint-disable-next-line no-console
     console.error("Neošetřená chyba aplikace:", error);
   }, [error]);
 

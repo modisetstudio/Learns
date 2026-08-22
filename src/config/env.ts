@@ -56,18 +56,15 @@ function loadEnv(): Env {
   }
 
   if (!process.env.NEXTAUTH_SECRET && process.env.NODE_ENV !== "production") {
-    // eslint-disable-next-line no-console
     console.warn(
       "[env] NEXTAUTH_SECRET není nastavené - používá se dočasná dev hodnota. " +
         "Před nasazením do produkce doplňte vlastní (openssl rand -base64 32).",
     );
   }
   if (!process.env.GEMINI_API_KEY) {
-    // eslint-disable-next-line no-console
     console.warn("[env] GEMINI_API_KEY není nastavené - AI tutor zatím nebude odpovídat.");
   }
   if (!process.env.UPSTASH_REDIS_REST_URL) {
-    // eslint-disable-next-line no-console
     console.warn("[env] UPSTASH_REDIS_REST_URL není nastavené - rate limiting běží jen v paměti (dev-only).");
   }
 

@@ -13,10 +13,8 @@ function log(level: LogLevel, message: string, context?: LogContext): void {
   };
 
   if (level === "error") {
-    // eslint-disable-next-line no-console
     console.error(JSON.stringify(entry));
   } else if (level === "warn") {
-    // eslint-disable-next-line no-console
     console.warn(JSON.stringify(entry));
   } else if (process.env.NODE_ENV === "development") {
     // eslint-disable-next-line no-console
