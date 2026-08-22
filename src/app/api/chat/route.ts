@@ -20,6 +20,12 @@ export async function POST(request: Request): Promise<NextResponse> {
     });
     return NextResponse.json(result);
   } catch (error) {
+    if (error instanceof Error && error.message === "AI_NOT_CONFIGURED") {
+      return NextResponse.json(
+        { error: "AI tutor zatím není nastavený (chybí GEMINI_API_KEY v .env). Doplňte klíč a restartujte server." },
+        { status: 503 },
+      );
+    }
     if (error instanceof Error && error.message === "RATE_LIMIT_TASK") {
       return NextResponse.json(
         {

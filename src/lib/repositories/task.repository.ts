@@ -1,12 +1,17 @@
 import type { Prisma, TaskDifficulty, TaskTopic } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
-import type { TaskWithoutAnswer } from "@/types";
+import type { TaskWithoutAnswer, SolutionStep } from "@/types";
 
 export interface TaskListFilters {
   topic?: TaskTopic;
   difficulty?: TaskDifficulty;
   excludeSolvedByStudentId?: string;
+}
+
+export interface TaskHint {
+  order: number;
+  socraticQuestion: string;
 }
 
 /**
@@ -15,6 +20,26 @@ export interface TaskListFilters {
  * out of any client-facing payload by construction.
  */
 export const taskRepository = {
+  /**
+   * Returns just the ordered Socratic *questions* (never `expectedInsight`,
+   * which gives away the actual math step) for a task's built-in hint
+   * ladder. This lets the UI offer a few free, instant hints with **zero**
+   * AI cost before the student ever needs to open the paid AI chat -
+   * the main lever for keeping AI spend down, since most "I don't know
+   * where to start" moments get resolved right here.
+   */
+  async findHintsById(taskId: string): Promise<TaskHint[]> {
+    const task = await prisma.task.findUniqueOrThrow({
+      where: { id: taskId },
+      select: { solutionSteps: true },
+    });
+    const steps = (task.solutionSteps as unknown as SolutionStep[]) ?? [];
+    return steps
+      .slice()
+      .sort((a, b) => a.order - b.order)
+      .map((step) => ({ order: step.order, socraticQuestion: step.socraticQuestion }));
+  },
+
   async findManyForPractice(filters: TaskListFilters, take = 20): Promise<TaskWithoutAnswer[]> {
     const where: Prisma.TaskWhereInput = {
       isPublished: true,

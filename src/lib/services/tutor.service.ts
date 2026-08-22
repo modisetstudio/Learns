@@ -1,14 +1,20 @@
 import { generateText } from "ai";
-import { google } from "@ai-sdk/google";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
 
 import { prisma } from "@/lib/prisma";
 import { chatTokenLimiter, chatMessageLimiter, chatPerTaskLimiter } from "@/lib/rate-limit";
 import { tutorCache } from "@/lib/tutor-cache";
 import { CHAT_RATE_LIMIT } from "@/constants";
 import { logger } from "@/lib/logger";
+import { env } from "@/config/env";
 import type { SolutionStep } from "@/types";
 
 const MODEL_ID = "gemini-2.0-flash";
+
+// `@ai-sdk/google` reads `GOOGLE_GENERATIVE_AI_API_KEY` by default, which
+// doesn't match our `.env` naming (`GEMINI_API_KEY`) - wire it explicitly
+// instead of relying on the SDK's implicit env lookup.
+const googleProvider = env.GEMINI_API_KEY ? createGoogleGenerativeAI({ apiKey: env.GEMINI_API_KEY }) : null;
 
 function buildSystemPrompt(params: {
   statementLatex: string;
@@ -95,6 +101,10 @@ export const tutorService = {
       }
     }
 
+    if (!googleProvider) {
+      throw new Error("AI_NOT_CONFIGURED");
+    }
+
     const systemPrompt = buildSystemPrompt({
       statementLatex: session.task.statementLatex,
       correctAnswer: session.task.correctAnswer,
@@ -107,7 +117,7 @@ export const tutorService = {
     }));
 
     const result = await generateText({
-      model: google(MODEL_ID),
+      model: googleProvider(MODEL_ID),
       system: systemPrompt,
       messages: [...conversationHistory, { role: "user" as const, content: params.studentMessage }],
       maxOutputTokens: CHAT_RATE_LIMIT.MAX_REPLY_TOKENS,

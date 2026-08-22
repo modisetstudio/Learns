@@ -366,7 +366,7 @@ async function main(): Promise<void> {
 
   for (const task of sampleTasks) {
     await prisma.task.upsert({
-      where: { externalCode: task.externalCode! },
+      where: { externalCode: task.externalCode ?? undefined },
       update: task,
       create: task,
     });

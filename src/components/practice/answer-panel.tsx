@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { Eye, CheckCircle2, XCircle } from "lucide-react";
+import { Eye, CheckCircle2, XCircle, Lightbulb } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,6 +44,18 @@ async function fetchRevealedSolution(taskId: string): Promise<{ correctAnswer: s
   return (await response.json()) as { correctAnswer: string };
 }
 
+interface TaskHint {
+  order: number;
+  socraticQuestion: string;
+}
+
+async function fetchHints(taskId: string): Promise<TaskHint[]> {
+  const response = await fetch(`/api/tasks/${taskId}/hints`);
+  if (!response.ok) throw new Error("Nápovědy se nepodařilo načíst.");
+  const data = (await response.json()) as { hints: TaskHint[] };
+  return data.hints;
+}
+
 export function AnswerPanel({ task, startedAt, nextTaskHref }: AnswerPanelProps): React.JSX.Element {
   const router = useRouter();
   const [answer, setAnswer] = React.useState("");
@@ -65,6 +77,28 @@ export function AnswerPanel({ task, startedAt, nextTaskHref }: AnswerPanelProps)
     onSuccess: (data) => setRevealedAnswer(data.correctAnswer),
     onError: () => toast.error("Řešení se nepodařilo načíst."),
   });
+
+  const [hints, setHints] = React.useState<TaskHint[] | null>(null);
+  const [hintsShown, setHintsShown] = React.useState(0);
+
+  const hintsMutation = useMutation({
+    mutationFn: () => fetchHints(task.id),
+    onSuccess: (data) => {
+      setHints(data);
+      setHintsShown(1);
+    },
+    onError: () => toast.error("Nápovědy se nepodařilo načíst."),
+  });
+
+  function handleHintClick(): void {
+    if (!hints) {
+      hintsMutation.mutate();
+      return;
+    }
+    setHintsShown((count) => Math.min(count + 1, hints.length));
+  }
+
+  const hasMoreHints = hints !== null && hintsShown < hints.length;
 
   function handleSubmit(event: React.FormEvent): void {
     event.preventDefault();
@@ -108,11 +142,39 @@ export function AnswerPanel({ task, startedAt, nextTaskHref }: AnswerPanelProps)
           <Button type="submit" isLoading={submitMutation.isPending} disabled={result === "correct"}>
             Zkontrolovat odpověď
           </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleHintClick}
+            isLoading={hintsMutation.isPending}
+            disabled={hints !== null && !hasMoreHints}
+          >
+            <Lightbulb className="h-4 w-4" />
+            {hints === null ? "Nápověda (zdarma)" : hasMoreHints ? "Další nápověda" : "To byly všechny nápovědy"}
+          </Button>
           <Button type="button" variant="outline" onClick={handleOpenSolution}>
             <Eye className="h-4 w-4" /> Zobrazit správný výsledek
           </Button>
         </div>
       </form>
+
+      {hints && hintsShown > 0 ? (
+        <div className="mt-4 space-y-2">
+          {hints.slice(0, hintsShown).map((hint, index) => (
+            <div key={hint.order} className="rounded-lg bg-primary-50 p-3 text-sm">
+              <p className="mb-1 text-xs font-medium text-primary-600">
+                Nápověda {index + 1}/{hints.length}
+              </p>
+              <KaTeXRenderer content={hint.socraticQuestion} className="text-primary-800" />
+            </div>
+          ))}
+          {!hasMoreHints ? (
+            <p className="text-xs text-muted-foreground">
+              Došly ti volné nápovědy. Zkus se zeptat AI tutora vpravo — ten už reaguje přímo na to, co jsi zkusil/a.
+            </p>
+          ) : null}
+        </div>
+      ) : null}
 
       {result === "correct" ? (
         <div className="mt-4 flex items-center gap-2 rounded-lg bg-success-50 p-3 text-success-700">

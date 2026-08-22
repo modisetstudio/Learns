@@ -27,13 +27,17 @@ export const tutorCache = {
   /**
    * Only meaningful for the *first* message of a chat session — later
    * messages depend on conversation history and must never be cached.
+   * Returns `null` (cache miss) whenever Redis isn't configured, which is
+   * safe — it just means every request calls Gemini directly.
    */
   async getFirstReply(taskId: string, message: string): Promise<string | null> {
+    if (!redis) return null;
     const cached = await redis.get<string>(cacheKey(taskId, message));
     return cached ?? null;
   },
 
   async setFirstReply(taskId: string, message: string, reply: string): Promise<void> {
+    if (!redis) return;
     await redis.set(cacheKey(taskId, message), reply, {
       ex: CHAT_RATE_LIMIT.FIRST_REPLY_CACHE_TTL_SECONDS,
     });

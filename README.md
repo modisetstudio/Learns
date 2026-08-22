@@ -42,10 +42,29 @@ prisma/
 
 ## Lokální spuštění
 
+### Nejrychlejší start (bez zakládání účtů)
+
+```bash
+npm install
+cp .env.example .env
+docker compose up -d      # spustí lokální Postgres na portu 5432
+npm run db:generate
+npm run db:migrate
+npm run db:seed
+npm run dev
+```
+
+`.env.example` má `DATABASE_URL` už přednastavené na tenhle lokální Postgres, takže
+stačí jen zkopírovat na `.env` beze změny. **Jediná proměnná, kterou aplikace opravdu
+potřebuje, je `DATABASE_URL`** — vše ostatní (Google přihlášení, AI tutor, e-maily,
+rate limiting) je volitelné a bez klíčů se jen ta konkrétní funkce nepoužije (viz
+komentáře v `.env.example` a `src/config/env.ts`). AI chat bez `GEMINI_API_KEY` vrátí
+srozumitelnou chybovou hlášku, ne pád aplikace.
+
 ### 1. Předpoklady
 
 - Node.js 20+
-- PostgreSQL databáze (doporučeno [Supabase](https://supabase.com) — má štědrý free tier)
+- Docker (pro lokální Postgres) **nebo** účet na [Supabase](https://supabase.com) (zdarma)
 
 ### 2. Instalace
 
@@ -54,20 +73,22 @@ npm install
 cp .env.example .env
 ```
 
-Vyplňte `.env` podle komentářů v souboru. Potřebujete účty/klíče u:
+`.env.example` obsahuje u každé proměnné komentář, jestli je povinná a odkud si vzít
+klíč, pokud danou funkci chcete zapnout:
 
-| Proměnná | Kde získat |
-|---|---|
-| `DATABASE_URL`, `DIRECT_URL` | [supabase.com](https://supabase.com) → Project Settings → Database |
-| `NEXTAUTH_SECRET` | vygenerujte: `openssl rand -base64 32` |
-| `GOOGLE_CLIENT_ID/SECRET` | [Google Cloud Console](https://console.cloud.google.com/apis/credentials) |
-| `GEMINI_API_KEY` | [Google AI Studio](https://aistudio.google.com/app/apikey) |
-| `RESEND_API_KEY` | [resend.com](https://resend.com/api-keys) |
-| `UPSTASH_REDIS_REST_URL/TOKEN` | [console.upstash.com](https://console.upstash.com) |
+| Proměnná | Povinné? | Kde získat |
+|---|---|---|
+| `DATABASE_URL` | **Ano** | `docker compose up -d`, nebo [supabase.com](https://supabase.com) → Project Settings → Database |
+| `NEXTAUTH_SECRET` | Ne (má dev fallback) | vygenerujte: `openssl rand -base64 32` |
+| `GOOGLE_CLIENT_ID/SECRET` | Ne | [Google Cloud Console](https://console.cloud.google.com/apis/credentials) |
+| `GEMINI_API_KEY` | Ne | [Google AI Studio](https://aistudio.google.com/app/apikey) |
+| `RESEND_API_KEY` | Ne | [resend.com](https://resend.com/api-keys) |
+| `UPSTASH_REDIS_REST_URL/TOKEN` | Ne (má in-memory fallback) | [console.upstash.com](https://console.upstash.com) |
 
 ### 3. Databáze
 
 ```bash
+docker compose up -d   # pokud nepoužíváte Supabase
 npm run db:generate
 npm run db:migrate
 npm run db:seed
