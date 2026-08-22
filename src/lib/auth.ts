@@ -1,4 +1,5 @@
 import NextAuth, { type DefaultSession } from "next-auth";
+import type { Provider } from "@auth/core/providers";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
@@ -30,7 +31,7 @@ declare module "@auth/core/jwt" {
   }
 }
 
-const providers = [
+const providers: Provider[] = [
   Credentials({
     name: "credentials",
     credentials: {
