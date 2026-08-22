@@ -1,49 +1,20 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { auth } from "@/lib/auth";
-
-export const ROLE_PREFIXES: Record<string, "STUDENT" | "ADMIN"> = {
-  "/dashboard": "STUDENT",
-  "/practice": "STUDENT",
-  "/admin": "ADMIN",
-};
 
 // ============================================================================
-// DOČASNĚ VYPNUTO: RBAC ochrana rout podle přihlášení
-// ----------------------------------------------------------------------------
-// Na výslovné přání zatím nemá aplikace vyžadovat přihlášení (login/register
-// obrazovky nejsou zapojené do UI). Server-side ochrana rolí (`STUDENT` /
-// `ADMIN`) se teď řeší v `src/lib/session.ts`, který místo
-// přesměrování na /login dočasně použije seedovaného demo uživatele.
+// DŮLEŽITÉ: tenhle soubor NESMÍ importovat nic z `@/lib/auth` (ani
+// transitivně) — middleware běží na Vercelu v Edge Runtime, který nepodporuje
+// Prisma Client ani bcrypt (oba vyžadují Node.js). Import `auth` z
+// `@/lib/auth` sem celý tenhle Node.js-only kód natáhne a build/runtime na
+// Vercelu spadne, i když se `auth()` fakticky nikdy nezavolá.
 //
-// Logika níže je plně funkční a stačí ji odkomentovat (a smazat fallback
-// v `src/lib/session.ts`), jakmile se přihlašování zapojí zpět do UI.
+// Pokud budete chtít RBAC ochranu rout podle role zpátky (viz historie -
+// `ROLE_PREFIXES` a redirect na /login), řešte to uvnitř jednotlivých
+// server komponent / API routes (Node.js runtime, ne Edge) přes
+// `src/lib/session.ts`, ne tady v middlewaru.
 // ============================================================================
-export default auth((_req: NextRequest & { auth: Awaited<ReturnType<typeof auth>> }) => {
+export function middleware(_req: NextRequest): NextResponse {
   return NextResponse.next();
-
-  /*
-  const { pathname } = req.nextUrl;
-  const matchedPrefix = Object.keys(ROLE_PREFIXES).find((prefix) => pathname.startsWith(prefix));
-
-  if (!matchedPrefix) {
-    return NextResponse.next();
-  }
-
-  const session = req.auth;
-  if (!session?.user) {
-    const loginUrl = new URL("/login", req.nextUrl.origin);
-    loginUrl.searchParams.set("callbackUrl", pathname);
-    return NextResponse.redirect(loginUrl);
-  }
-
-  const requiredRole = ROLE_PREFIXES[matchedPrefix];
-  if (requiredRole && session.user.role !== requiredRole) {
-    return NextResponse.redirect(new URL("/nepovoleny-pristup", req.nextUrl.origin));
-  }
-
-  return NextResponse.next();
-  */
-});
+}
 
 export const config = {
   matcher: ["/dashboard/:path*", "/practice/:path*", "/admin/:path*"],
