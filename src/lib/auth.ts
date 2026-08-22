@@ -1,5 +1,4 @@
 import NextAuth, { type DefaultSession } from "next-auth";
-import type { Provider } from "@auth/core/providers";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
@@ -31,7 +30,17 @@ declare module "@auth/core/jwt" {
   }
 }
 
-const providers: Provider[] = [
+// Typ pole providers odvozujeme přímo z parametru funkce NextAuth() místo
+// importu `Provider` z "@auth/core/providers" - v node_modules totiž existují
+// DVĚ kopie @auth/core (jedna nahoře, jedna zanořená v next-auth/node_modules),
+// protože @auth/prisma-adapter a next-auth si každý táhnou vlastní verzi.
+// Import z vršku by se pak neshodoval s tím, co interně čeká
+// next-auth/providers/credentials (typová kolize "dvou stejných, ale different
+// instance" typů). Odvozením z NextAuth() samotné se tomuhle problému
+// vyhneme úplně.
+type NextAuthProviders = NonNullable<Parameters<typeof NextAuth>[0]["providers"]>;
+
+const providers: NextAuthProviders = [
   Credentials({
     name: "credentials",
     credentials: {
